@@ -6,7 +6,7 @@ A small KDE-friendly GUI for limiting maximum CPU frequency on Linux without cha
 
 ## Status
 
-**v0.2.0 — development release, tested on real hardware**
+**v0.2.0 — current release, tested on real hardware**
 
 Fedora CPU Limit targets systems using the `amd-pstate` family of CPU frequency drivers and provides simple maximum CPU limits of 100%, 90%, 80%, 70%, 60%, and 50%.
 
@@ -51,7 +51,7 @@ The implementation automatically discovers CPU policy domains and maximum freque
 
 ## Automatic AC and battery profiles
 
-Version 0.2.0 can maintain separate CPU limits for AC power and battery operation. For example, you can configure:
+Version 0.2.0 can maintain separate CPU limits for AC power and battery operation. For example:
 
 ```text
 AC power: 100%
@@ -64,9 +64,9 @@ The manual CPU-limit controls continue to work independently when automatic swit
 
 ## System tray
 
-Fedora CPU Limit can remain active in the KDE system tray when its main window is closed. The tray menu provides quick access to the CPU-limit presets and lets the application continue watching for AC/battery changes in the background.
+Fedora CPU Limit can remain active in the KDE system tray when its main window is closed. The tray menu provides quick access to CPU-limit presets and lets the application continue watching for AC/battery changes in the background.
 
-Use the tray application's Quit action when you want to exit the program completely.
+Use the tray application's **Quit** action when you want to exit the program completely.
 
 ## Safety model
 
@@ -81,17 +81,16 @@ Clone the repository and install from its root directory:
 ```bash
 git clone https://github.com/kaitho/fedora-cpu-limit.git
 cd fedora-cpu-limit
-git switch feature/v0.2.0
 bash packaging/install-local.sh
 ```
 
 After installation, launch **Fedora CPU Limit** from KDE's application menu.
 
-To update an existing v0.2.0 development checkout:
+To update an existing installation:
 
 ```bash
 cd ~/fedora-cpu-limit
-git switch feature/v0.2.0
+git switch main
 git pull
 bash packaging/install-local.sh
 ```
@@ -106,7 +105,7 @@ python3 -m fedora_cpu_limit.app
 
 ### `Exec format error` when applying a CPU limit
 
-An early v0.1.1 development build could show an error similar to:
+An early v0.1.1 development build could show:
 
 ```text
 Error executing /usr/libexec/fedora-cpu-limit-helper: Exec format error
@@ -124,11 +123,12 @@ This is fixed in current source. If you installed an older copy, update and rein
 
 ```bash
 cd ~/fedora-cpu-limit
+git switch main
 git pull
 bash packaging/install-local.sh
 ```
 
-You can verify the installed helper with:
+Verify the installed helper with:
 
 ```bash
 head -n 1 /usr/libexec/fedora-cpu-limit-helper
@@ -174,7 +174,6 @@ Contributions and hardware/distro testing reports are welcome as the project exp
 
 ## Roadmap
 
-- Polish and release v0.2.0
 - Optional custom percentage limits
 - Autostart / improved KDE session integration
 - RPM packaging and Fedora COPR

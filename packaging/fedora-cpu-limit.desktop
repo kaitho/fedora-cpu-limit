@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Fedora CPU Limit
+Comment=Limit maximum CPU frequency without changing the Fedora power profile
+Exec=fedora-cpu-limit
+Icon=utilities-system-monitor
+Terminal=false
+Categories=System;Monitor;Settings;
+StartupNotify=true

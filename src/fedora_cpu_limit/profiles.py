@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".config" / "fedora-cpu-limit"
 CONFIG_FILE = CONFIG_DIR / "profiles.json"
+VALID_PRESETS = {50, 60, 70, 80, 90, 100}
 
 
 @dataclass
@@ -15,17 +16,25 @@ class ProfileConfig:
     automatic: bool = False
 
 
+def _valid_percent(value: object, fallback: int) -> int:
+    try:
+        percent = int(value)
+    except (TypeError, ValueError):
+        return fallback
+    return percent if percent in VALID_PRESETS else fallback
+
+
 def load_config() -> ProfileConfig:
     if not CONFIG_FILE.exists():
         return ProfileConfig()
     try:
         data = json.loads(CONFIG_FILE.read_text())
         return ProfileConfig(
-            ac_percent=int(data.get("ac_percent", 100)),
-            battery_percent=int(data.get("battery_percent", 70)),
+            ac_percent=_valid_percent(data.get("ac_percent"), 100),
+            battery_percent=_valid_percent(data.get("battery_percent"), 70),
             automatic=bool(data.get("automatic", False)),
         )
-    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+    except (OSError, TypeError, json.JSONDecodeError):
         return ProfileConfig()
 
 

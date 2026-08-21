@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+"""Privileged helper for Fedora CPU Limit."""
+
 from __future__ import annotations
 
 import sys
@@ -8,13 +11,15 @@ BASE = Path("/sys/devices/system/cpu/cpufreq")
 
 def main() -> int:
     if len(sys.argv) != 2:
-        print("usage: helper.py FREQUENCY_KHZ", file=sys.stderr)
+        print("usage: fedora-cpu-limit-helper FREQUENCY_KHZ", file=sys.stderr)
         return 2
+
     try:
         frequency = int(sys.argv[1])
     except ValueError:
         print("frequency must be an integer", file=sys.stderr)
         return 2
+
     if frequency <= 0:
         print("frequency must be positive", file=sys.stderr)
         return 2
@@ -24,6 +29,7 @@ def main() -> int:
         print("no CPU policies found", file=sys.stderr)
         return 1
 
+    # Never allow the helper to set a value above the hardware-reported maximum.
     for path in paths:
         policy = path.parent
         max_path = policy / "cpuinfo_max_freq"
@@ -35,6 +41,7 @@ def main() -> int:
 
     for path in paths:
         path.write_text(f"{frequency}\n")
+
     return 0
 
 

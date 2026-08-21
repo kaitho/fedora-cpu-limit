@@ -5,21 +5,12 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import (
-    QApplication,
-    QFormLayout,
-    QLabel,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QRadioButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QApplication, QFormLayout, QLabel, QMainWindow, QMessageBox, QPushButton, QRadioButton, QVBoxLayout, QWidget
 
-from .cpu import current_cpu_mhz, current_percent, current_frequency, driver, policies, target_frequency, temperature_c
+from .cpu import current_cpu_mhz, current_percent, driver, policies, target_frequency, temperature_c
 
-HELPER = Path(__file__).with_name("helper.py")
+INSTALLED_HELPER = Path("/usr/libexec/fedora-cpu-limit-helper")
+DEV_HELPER = Path(__file__).with_name("helper.py")
 PRESETS = (100, 90, 80, 70, 60, 50)
 
 
@@ -65,7 +56,6 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(root)
         self.refresh()
-
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_telemetry)
         self.timer.start(1000)
@@ -80,12 +70,7 @@ class MainWindow(QMainWindow):
             return
         maximum = max(p.max_freq for p in items)
         current = current_percent()
-        self.info.setText(
-            f"Driver: {drv}\n"
-            f"Policies: {len(items)}\n"
-            f"Maximum: {maximum / 1_000_000:.2f} GHz\n"
-            f"Current limit: {current if current is not None else '—'}%"
-        )
+        self.info.setText(f"Driver: {drv}\nPolicies: {len(items)}\nMaximum: {maximum / 1_000_000:.2f} GHz\nCurrent limit: {current if current is not None else '—'}%")
         for button in self.buttons:
             button.setChecked(button.property("percent") == current)
         self.refresh_telemetry()
@@ -108,9 +93,14 @@ class MainWindow(QMainWindow):
             return
         maximum = max(p.max_freq for p in items)
         frequency = target_frequency(selected, maximum)
-        command = [sys.executable, str(HELPER), str(frequency)]
+
+        if INSTALLED_HELPER.exists():
+            command = ["pkexec", str(INSTALLED_HELPER), str(frequency)]
+        else:
+            command = ["pkexec", sys.executable, str(DEV_HELPER), str(frequency)]
+
         try:
-            result = subprocess.run(["pkexec", *command], text=True, capture_output=True, check=False)
+            result = subprocess.run(command, text=True, capture_output=True, check=False)
         except FileNotFoundError:
             QMessageBox.critical(self, "CPU Limit", "pkexec is not installed.")
             return

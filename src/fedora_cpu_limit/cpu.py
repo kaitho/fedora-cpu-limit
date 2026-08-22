@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 BASE = Path("/sys/devices/system/cpu/cpufreq")
+INTEL_PSTATE_BASE = Path("/sys/devices/system/cpu/intel_pstate")
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,29 @@ def driver() -> str | None:
     return paths[0].read_text().strip() if paths else None
 
 
+def intel_pstate_active() -> bool:
+    status = INTEL_PSTATE_BASE / "status"
+    max_perf = INTEL_PSTATE_BASE / "max_perf_pct"
+    try:
+        return driver() == "intel_pstate" and status.read_text().strip() == "active" and max_perf.exists()
+    except OSError:
+        return False
+
+
+def control_mode() -> str:
+    """Return the preferred limiting backend for the current CPU driver."""
+    if intel_pstate_active():
+        return "intel_percent"
+    return "frequency"
+
+
+def control_description() -> str:
+    if control_mode() == "intel_percent":
+        return "Intel P-state percentage"
+    drv = driver() or "unknown"
+    return f"CPUFreq frequency ({drv})"
+
+
 def target_frequency(percent: int, maximum: int) -> int:
     if not 1 <= percent <= 100:
         raise ValueError("percent must be between 1 and 100")
@@ -51,6 +75,12 @@ def target_frequency(percent: int, maximum: int) -> int:
 
 
 def current_percent() -> int | None:
+    if intel_pstate_active():
+        try:
+            return read_int(INTEL_PSTATE_BASE / "max_perf_pct")
+        except (OSError, ValueError):
+            return None
+
     items = policies()
     if not items:
         return None
@@ -74,16 +104,20 @@ def current_cpu_mhz() -> float | None:
 
 
 def temperature_c() -> float | None:
-    for hwmon in sorted(Path("/sys/class/hwmon").glob("hwmon*")):
-        try:
-            name = (hwmon / "name").read_text().strip()
-        except OSError:
-            continue
-        if name != "k10temp":
-            continue
-        for path in sorted(hwmon.glob("temp*_input")):
+    preferred_names = ("k10temp", "coretemp")
+    hwmons = sorted(Path("/sys/class/hwmon").glob("hwmon*"))
+
+    for preferred in preferred_names:
+        for hwmon in hwmons:
             try:
-                return read_int(path) / 1000.0
-            except (OSError, ValueError):
+                name = (hwmon / "name").read_text().strip()
+            except OSError:
                 continue
+            if name != preferred:
+                continue
+            for path in sorted(hwmon.glob("temp*_input")):
+                try:
+                    return read_int(path) / 1000.0
+                except (OSError, ValueError):
+                    continue
     return None
